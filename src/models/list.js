@@ -4,15 +4,15 @@ const userSchema=new mongoose.Schema({      // SCHEMA DESIGN
         type:String,
         required:true
     },
-    username:{
+    description:{
         type:String,
         required:true,
     },
-    password:{
+    productImage:{
         type:String,
         required:true
     }
 
 })
-const Users =mongoose.model("Users",userSchema);
-module.exports=Users;
+const Product_list =mongoose.model("Product_list",userSchema);
+module.exports=Product_list;

@@ -9,90 +9,91 @@ const bodyParser = require("body-parser");
 app.use(bodyParser.json());
 app.use(express.json());
 app.use(morgan("tiny"));
-const Users= require("./src/models/register");
+app.use('/uploads',express.static('uploads'));
+const list= require("./src/models/list");
 dotenv.config({ path: './config.env'})
 require("./src/db/conn")
+const multer =require("multer");
+const { listeners } = require('process');
+//const upload= multer({dest: 'uploads/'})
+const storage= multer.diskStorage({
+  destination: function(req,file,cb){
+
+    cb(null,"./uploads/")
+  },
+  filename:function(req,file,cb){
+    const filename=(String)(file.originalname)
+    cb(null,  filename)
+  }
+}) 
+const upload=multer({storage:storage});
 
 app.get("/",async(req,res)=>{ // FIND ALL USERS
-    const userList = await Users.find();
+  const productList = await list.find();
 
-    if (!userList) {
-      res.status(500).json({ success: false });
-    }
-    res.send(userList);
+  if (!productList) {
+    res.status(500).json({ success: false });
+  }
+  res.send(productList);
 })
-
-
 
 app.get(`/:id`, async (req, res) => {         // FIND PARTICULAR USER
-    const userList = await Users.findById(req.params.id);
-  
-    if (!userList) {
-      res.status(500).json({ success: false });
-    }
-    res.send(userList);
-  });
-  
+  const productList = await list.findById(req.params.id);
 
- 
-app.post("/", async(req,res)=>{                 // CREATED NEW USER
-    const salt = await bcryptjs.genSalt(12);
-    const password= req.body.password;
+  if (!productList) {
+    res.status(500).json({ success: false });
+  }
+  res.send(productList);
+});
 
-    // hash the password
-    const hash = await bcryptjs.hash(password, salt);
-    let user = new Users({
+app.post("/",upload.single('productImage') ,async(req,res)=>{                 // CREATED NEW USER
+  
+    let item = new list({
         name: req.body.name,
-       username:req.body.username,
-       password:hash        
+       description:req.body.description,
+       productImage:req.file.path    
       });
-      user = await user.save();
+    item = await item.save();
+    //console.log(user);
+      if (!item) return res.status(400).send("the product cannot be created!");
     
-      if (!user) return res.status(400).send("the user cannot be created!");
-    
-      res.send(user);
+      res.send(item);
 
 })
 
-
-
 app.put("/:id", async (req, res) => {         // UPDATED USER 
-    const user = await Users.findByIdAndUpdate(
-      req.params.id,
-      {
-        name:req.body.name,
-        username:req.body.username
-      },
-      { new: true }
-    );
-  
-    if (!user) return res.status(400).send("the user cannot be updated");
-  
-    res.send(user);
-  });
+  const item = await list.findByIdAndUpdate(
+    req.params.id,
+    {
+      name:req.body.name,
+      description:req.body.description,
+      productImage:req.file.path    
+    },
+    { new: true }
+  );
 
+  if (!item) return res.status(400).send("the product cannot be updated");
 
- 
-  app.delete("/:id", (req, res) => {              // DELETE USER
-    Users.findByIdAndRemove(req.params.id)
-      .then((user) => {
-        if (user) {
-          return res
-            .status(200)
-            .json({ success: true, message: "the user deleted" });
-        } else {
-          return res
-            .status(404)
-            .json({ success: false, message: "the user not found" });
-        }
-      })
-      .catch((err) => {
-        return res.status(400).json({ success: false, error: err });
-      });
-  });
+  res.send(item);
+});
 
-
-
+app.delete("/:id", (req, res) => {              // DELETE USER
+  listeners.findByIdAndRemove(req.params.id)
+    .then((user) => {
+      if (user) {
+        return res
+          .status(200)
+          .json({ success: true, message: "the product deleted" });
+      } else {
+        return res
+          .status(404)
+          .json({ success: false, message: "the product not found" });
+      }
+    })
+    .catch((err) => {
+      return res.status(400).json({ success: false, error: err });
+    });
+});
 app.listen(port,()=>{
     console.log(`server is running at port no ${port}`);
 })
